@@ -10,23 +10,42 @@ namespace Nätverksövervakning
     public class ObjPing
     {
 
-        /* Objekt som pingar given IP-adress och returnerar sträng */
+        /* Pingar given IP-adress och returnerar Task (async) */
         public async Task<PingReply> MyPingAsync(String IPAddress)
         {
             using System.Net.NetworkInformation.Ping ping = new();
             PingReply reply = await ping.SendPingAsync(IPAddress);
             return reply;
+        }
 
-            //if (reply.Status == IPStatus.Success)
-            //{
-            //    Console.WriteLine($"Online - {reply.RoundtripTime} ms");
-            //}
-            //else
-            //{
-            //    Console.WriteLine($"Offline - {reply.Status}");
-            //}
+        public async Task<List<string>> ScanSubnetAsync(string subnetBase)
+        {
+            var tasks = new List<Task<PingReply>>();
+            var addresses = new List<string>();
 
-            //return reply.Status.ToString();
+            for (int i = 1; i <= 254; i++)
+            {
+                string ip = $"{subnetBase}{i}";
+                addresses.Add(ip);
+
+                // Startar pingen (men väntar inte)
+                tasks.Add(MyPingAsync($"{subnetBase}{i}"));
+            }
+
+            // Vänta på att alla pings är klara
+            PingReply[] results = await Task.WhenAll(tasks);
+
+            // Gå igenom resultaten och plocka ut de som svarade
+            var pingSuccesss = new List<string>();
+            for (int i = 0; i < results.Length; i++)
+            {
+                if (results[i].Status == IPStatus.Success)
+                {
+                    pingSuccesss.Add(addresses[i]);
+                }
+            }
+
+            return pingSuccesss;
         }
     }
 }
