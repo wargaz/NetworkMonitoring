@@ -6,15 +6,16 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using ArpLookup;
 
 
 namespace Nätverksövervakning
 {
-    public class ObjPing
+    public class NetworkLookup
     {
-        private String myIP = "";
+        private string myIP = "";
 
-        public ObjPing(String subnetBase) 
+        public NetworkLookup(string subnetBase) 
         {
             // Hämta egen IP-adress från angivet subnet
             myIP = GetLocalIPAddress(subnetBase);
@@ -24,12 +25,13 @@ namespace Nätverksövervakning
                 Console.WriteLine($"Ditt IP: {myIP}.");
         }
 
-        // Returnera egen IP-adress
+        // Returnera egen IP-adress som sträng
         public string GetLocalIPAddress(string subnetBase)
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
             foreach (var ip in host.AddressList)
             {
+                //Console.WriteLine($"Hittade IP: {ip.ToString()}");
                 if (ip.AddressFamily == AddressFamily.InterNetwork && ip.ToString().StartsWith(subnetBase))
                 {
                     return ip.ToString();
@@ -39,40 +41,56 @@ namespace Nätverksövervakning
         }
 
         // Pingar given IP-adress och returnerar Task (async)
-        public async Task<PingReply> PingAsync(String IPAddress)
+        public async Task<PingReply> PingAsync(string IPAddress)
         {
             using System.Net.NetworkInformation.Ping ping = new();
             PingReply reply = await ping.SendPingAsync(IPAddress);
             return reply;
         }
 
-        // Söker igenom subnet och returnerar alla IP-adresser som svarar
-        public async Task<List<string>> ScanSubnetAsync(string subnetBase)
+        // Söker igenom subnet och returnerar IP och MAC-adresser
+        public async Task<List<(string IP, string Hostname)>> ScanSubnetAsync(string subnetBase)
         {
             var tasks = new List<Task<PingReply>>();
             var addresses = new List<string>();
 
+            // Loopa och hoppa över 0 (nätverksadress) och 255 (broadcast)
             for (int i = 1; i <= 254; i++)
             {
                 string ip = $"{subnetBase}{i}";
                 addresses.Add(ip);
 
-                // Startar pingen (men väntar inte)
+                // Startar pingen (async)
                 tasks.Add(PingAsync($"{subnetBase}{i}"));
             }
 
             // Vänta på att alla pings är klara
             PingReply[] results = await Task.WhenAll(tasks);
+            List<string> getIPAddress = new List<string>();
+            List<string> getMACAdress = new List<string>();
 
-            // Gå igenom resultaten och plocka ut de som svarade
-            var pingSuccesss = new List<string>();
+            // Går igenom resultaten och plockar ut de som svarade
+            var pingSuccesss = new List<(string IP, string Hostname)>();
             for (int i = 0; i < results.Length; i++)
             {
                 if (results[i].Status == IPStatus.Success)
                 {
+                    //string hostName = "";
+
+                    // IP-adressen som svarade
+                    getIPAddress.Add(addresses[i]);
+
+                    // Hämta MAC
+                    PhysicalAddress ? mac = null;
+                    mac = Arp.Lookup(IPAddress.Parse(addresses[i]));
+
                     if (addresses[i] == myIP)
-                        addresses[i] += " (Egen IP)";
-                    pingSuccesss.Add(addresses[i]);
+                        addresses[i] += " (Din IP)";
+
+                    string ipResult = addresses[i];
+                    string macResult = (mac == null || mac.ToString() == "") ? "Ingen MAC-adress hittades" : mac.ToString();
+
+                    pingSuccesss.Add((ipResult, macResult));
                 }
             }
 

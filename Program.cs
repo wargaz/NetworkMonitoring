@@ -15,12 +15,12 @@ namespace Nätverksövervakning
 
             Console.WriteLine("Nätverksövervakning - John Axelsson\n");
 
-            String subnetBase = "192.168.0.";
-            ObjPing ping = new ObjPing(subnetBase);
+            string subnetBase = "192.168.0."; // Låt användaren ange detta senare via UI
+            NetworkLookup ping = new NetworkLookup(subnetBase);
 
             /*** PING ***/
 
-            String pingURL = "google.se";
+            string pingURL = "google.se";
             PingReply reply = await ping.PingAsync(pingURL);
 
             Console.WriteLine($"Pingtest till {pingURL}...");
@@ -38,12 +38,12 @@ namespace Nätverksövervakning
 
             Console.WriteLine($"\nGår igenom subnet {subnetBase}0-255...");
 
-            List<String> results = await ping.ScanSubnetAsync(subnetBase);
+            List<(string IP, string Hostname)> results = await ping.ScanSubnetAsync(subnetBase);
 
 
-            foreach (string ip in results)
+            foreach (var (IP, Hostname) in results)
             {
-                Console.WriteLine($"Hittade: {ip}");
+                Console.WriteLine($"Hittade: {IP} ({Hostname})");
             }
 
 

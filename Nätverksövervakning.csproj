@@ -9,4 +9,8 @@
 	<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="ArpLookup" Version="2.1.88" />
+  </ItemGroup>
+
 </Project>
