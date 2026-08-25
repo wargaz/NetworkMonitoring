@@ -1,12 +1,14 @@
 ﻿using System;
-using System.Text;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 using ArpLookup;
+using MacAddressVendorLookup;
 
 
 namespace Nätverksövervakning
@@ -14,9 +16,20 @@ namespace Nätverksövervakning
     public class NetworkLookup
     {
         private string myIP = "";
+        private MacVendorBinaryReader vendorInfoProvider;
+        private AddressMatcher addressMatcher;
 
         public NetworkLookup(string subnetBase) 
         {
+
+            vendorInfoProvider = new MacVendorBinaryReader();
+            using (var resourceStream = ManufBinResource.GetStream().Result)
+            {
+                vendorInfoProvider.Init(resourceStream).Wait();
+            }
+            addressMatcher = new AddressMatcher(vendorInfoProvider);
+
+
             // Hämta egen IP-adress från angivet subnet
             myIP = GetLocalIPAddress(subnetBase);
             if (myIP == "") 
@@ -49,7 +62,7 @@ namespace Nätverksövervakning
         }
 
         // Söker igenom subnet och returnerar IP och MAC-adresser
-        public async Task<List<(string IP, string Hostname)>> ScanSubnetAsync(string subnetBase)
+        public async Task<List<(string IP, string MAC, string vendor)>> ScanSubnetAsync(string subnetBase)
         {
             var tasks = new List<Task<PingReply>>();
             var addresses = new List<string>();
@@ -70,31 +83,47 @@ namespace Nätverksövervakning
             List<string> getMACAdress = new List<string>();
 
             // Går igenom resultaten och plockar ut de som svarade
-            var pingSuccesss = new List<(string IP, string Hostname)>();
+            var pingSuccesss = new List<(string IP, string MAC, string vendor)>();
             for (int i = 0; i < results.Length; i++)
             {
                 if (results[i].Status == IPStatus.Success)
                 {
-                    //string hostName = "";
 
                     // IP-adressen som svarade
                     getIPAddress.Add(addresses[i]);
-
-                    // Hämta MAC
-                    PhysicalAddress ? mac = null;
-                    mac = Arp.Lookup(IPAddress.Parse(addresses[i]));
-
-                    if (addresses[i] == myIP)
-                        addresses[i] += " (Din IP)";
-
+                    
                     string ipResult = addresses[i];
-                    string macResult = (mac == null || mac.ToString() == "") ? "Ingen MAC-adress hittades" : mac.ToString();
+                    string macResult = await GetMAC(ipResult);
+                    string vendorResult = GetVendor(macResult);
 
-                    pingSuccesss.Add((ipResult, macResult));
+                    pingSuccesss.Add((ipResult, macResult, vendorResult));
                 }
             }
 
             return pingSuccesss;
+        }
+
+        // Plockar MAC-adress för en given IP-adress
+        public async Task<string> GetMAC(string IPAdress)
+        {
+            // Hämta MAC
+            await PingAsync(IPAdress); // Försök pinga först för att säkerställa att ARP-tabellen är uppdaterad
+            PhysicalAddress? mac = null;
+            mac = Arp.Lookup(IPAddress.Parse(IPAdress));
+            return (mac == null || mac.ToString() == "") ? "Ingen MAC-adress hittades" : mac.ToString();
+        }
+
+        public string GetVendor(string macAddress)
+        {
+            // Kontrollera giltig MAC
+            if (string.IsNullOrEmpty(macAddress) || macAddress.Length < 6)
+                return "";
+
+            // Hämta vendor
+            PhysicalAddress mac = PhysicalAddress.Parse(macAddress);
+            var vendorInfo = addressMatcher.FindInfo(mac);
+
+            return vendorInfo?.Organization ?? "Okänd tillverkare";
         }
     }
 }

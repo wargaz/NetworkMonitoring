@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <PackageReference Include="ArpLookup" Version="2.1.88" />
+    <PackageReference Include="MacAddressVendorLookup" Version="1.2.0" />
+    <PackageReference Include="Zeroconf" Version="3.7.16" />
   </ItemGroup>
 
 </Project>
