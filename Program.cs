@@ -1,5 +1,3 @@
-using Nätverksövervakning.UI;
-using System;
 using System.Net.NetworkInformation;
 
 namespace Nätverksövervakning
@@ -19,11 +17,12 @@ namespace Nätverksövervakning
             NetworkLookup netLook = new NetworkLookup(subnetBase);
 
 
-            /*** EGEN IP ***/
+            /*** Hämta egen IP ***/
 
             string myIP = netLook.GetLocalIPAddress(subnetBase);
 
-            /*** PING ***/
+
+            /*** Pinga given URL ***/
 
             string pingURL = "google.se";
             PingReply reply = await netLook.PingAsync(pingURL);
@@ -31,28 +30,43 @@ namespace Nätverksövervakning
             Console.WriteLine($"Pingtest till {pingURL}...");
 
             if (reply.Status == IPStatus.Success)
-            {
                 Console.WriteLine($"Ping till {pingURL} lyckades. {reply.RoundtripTime} ms.");
-            }
             else
-            {
                 Console.WriteLine($"Ping till {pingURL} misslyckades.");
-            }
 
-            /*** SUBNET PING ***/
+
+            /*** Hämta info om aktiva anslutningar i subnet ***/
 
             Console.WriteLine($"\nGår igenom subnet {subnetBase}0-255...");
 
-            List<(string IP, string MAC, string vendor)> results = await netLook.ScanSubnetAsync(subnetBase);
+            List<(string IP, string MAC, string vendor, string other)> activeConn = await netLook.ScanSubnetAsync(subnetBase);
 
 
-            foreach (var (IP, MAC, vendor) in results)
+            foreach (var (IP, MAC, vendor, other) in activeConn)
             {
                 string myIPStr = "";
-                if (IP == myIP) myIPStr = " - Din maskin";
-                Console.WriteLine($"Hittade: {IP}, {MAC}, {vendor}{myIPStr}");
+                if (IP == myIP) myIPStr = " - Denna maskin";
+                string otherStr = string.IsNullOrEmpty(other) ? "" : $", {other}"; // Så det inte blir extra kolon
+                Console.WriteLine($"Hittade: {IP}, {MAC}, {vendor}{otherStr}{myIPStr}");
             }
 
+
+            //*** Visa latens till aktiva anslutningar ***//
+            //TODO: kör kontinuerligt och räkna ut snittet
+            int[] latency = new int[activeConn.Count];
+            string[] latencyStatus = new string[activeConn.Count];
+            for (int i = 0; i < activeConn.Count; i++)
+            {
+                var (latencyValue, status) = await netLook.GetLatency(activeConn[i].IP);
+                latency[i] = (int)latencyValue;
+                latencyStatus[i] = status.ToString();
+            }
+            
+            Console.WriteLine("\nLatens till aktiva anslutningar:");
+            for (int i = 0; i < activeConn.Count; i++)
+            {
+                Console.WriteLine($"IP: {activeConn[i].IP}, Latens: {latency[i]} ms, Status: {latencyStatus[i]}");
+            }
 
             Console.WriteLine("\nTryck på valfri tangent för att avsluta...");
             Console.ReadKey();
