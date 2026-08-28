@@ -4,6 +4,8 @@ namespace Nätverksövervakning
 {
     internal static class Program
     {
+
+
         [STAThread]
         static async Task Main()
         {
@@ -14,18 +16,18 @@ namespace Nätverksövervakning
             Console.WriteLine("Nätverksövervakning - John Axelsson\n");
 
             string subnetBase = "192.168.0."; // Låt användaren ange detta senare via UI
-            NetworkLookup netLook = new NetworkLookup(subnetBase);
+            Network toolNetwork = new Network();
 
 
-            /*** Hämta egen IP ***/
 
-            string myIP = netLook.GetLocalIPAddress(subnetBase);
-
+            // Skriv ut klientens IP om det finns på angivet subnet
+            string myIP = toolNetwork.GetLocalIPAddress(subnetBase);
+            if (myIP != "") Console.WriteLine($"Ditt IP: {myIP}.");
 
             /*** Pinga given URL ***/
 
             string pingURL = "google.se";
-            PingReply reply = await netLook.PingAsync(pingURL);
+            PingReply reply = await toolNetwork.PingAsync(pingURL);
 
             Console.WriteLine($"Pingtest till {pingURL}...");
 
@@ -39,7 +41,7 @@ namespace Nätverksövervakning
 
             Console.WriteLine($"\nGår igenom subnet {subnetBase}0-255...");
 
-            List<(string IP, string MAC, string vendor, string other)> activeConn = await netLook.ScanSubnetAsync(subnetBase);
+            List<(string IP, string MAC, string vendor, string other)> activeConn = await toolNetwork.ScanSubnetAsync(subnetBase);
 
 
             foreach (var (IP, MAC, vendor, other) in activeConn)
@@ -57,7 +59,7 @@ namespace Nätverksövervakning
             string[] latencyStatus = new string[activeConn.Count];
             for (int i = 0; i < activeConn.Count; i++)
             {
-                var (latencyValue, status) = await netLook.GetLatency(activeConn[i].IP);
+                var (latencyValue, status) = await toolNetwork.GetLatency(activeConn[i].IP);
                 latency[i] = (int)latencyValue;
                 latencyStatus[i] = status.ToString();
             }
