@@ -1,4 +1,6 @@
 using System.Net.NetworkInformation;
+using System.Reactive.Subjects;
+using Nätverksövervakning.UI;
 
 namespace Nätverksövervakning
 {
@@ -9,16 +11,16 @@ namespace Nätverksövervakning
         [STAThread]
         static async Task Main()
         {
-            // Implementerar UI senare:
-            //ApplicationConfiguration.Initialize();
-            //Application.Run(new WindowMain());
+
+            ApplicationConfiguration.Initialize();
+            Application.Run(new NetworkUI());
+
+            // Logiken flyttad till NetworkUI.cs
 
             Console.WriteLine("Nätverksövervakning - John Axelsson\n");
 
             string subnetBase = "192.168.0."; // Låt användaren ange detta senare via UI
             Network toolNetwork = new Network();
-
-
 
             // Skriv ut klientens IP om det finns på angivet subnet
             string myIP = toolNetwork.GetLocalIPAddress(subnetBase);
@@ -63,7 +65,7 @@ namespace Nätverksövervakning
                 latency[i] = (int)latencyValue;
                 latencyStatus[i] = status.ToString();
             }
-            
+
             Console.WriteLine("\nLatens till aktiva anslutningar:");
             for (int i = 0; i < activeConn.Count; i++)
             {
@@ -71,7 +73,15 @@ namespace Nätverksövervakning
             }
 
             Console.WriteLine("\nTryck på valfri tangent för att avsluta...");
-            Console.ReadKey();
+            var scanButton = new Button
+            {
+                Text = "Skanna nätverk",
+                Location = new Point(20, 20),
+                Size = new Size(150, 30)
+            };
+
+            //Console.ReadKey();
+
 
         }
     }

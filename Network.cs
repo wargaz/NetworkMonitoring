@@ -22,8 +22,18 @@ namespace Nätverksövervakning
         // Hämtar MAC-adress för en given IP-adress
         public async Task<string> GetMAC(string IPAdress)
         {
-            await toolPing.PingAsync(IPAdress); // Pinga först för att uppdatera ARP-tabellen
-            return await toolMAC.GetMAC(IPAdress);
+            int retry = 3;
+            string MAC = "";
+            while (retry > 0 && MAC == "")
+            {
+                await toolPing.PingAsync(IPAdress); // Pinga först för att uppdatera ARP-tabellen
+                MAC = await toolMAC.GetMAC(IPAdress);
+                if (MAC != "")
+                    break;
+                retry--;
+                await Task.Delay(500); // Vänta en halv sekund innan nästa försök
+            }
+            return MAC;
         }
 
 
@@ -41,7 +51,7 @@ namespace Nätverksövervakning
 
 
         // Söker igenom subnet och returnerar IP, MAC, vendor info och info från Zeroconf
-        public async Task<List<(string IP, string MAC, string vendor, string other)>> ScanSubnetAsync(string subnetBase)
+        public async Task<List<(string IP, string MAC, string vendor, string other)>> ScanSubnetAsync(string subnetBase, IProgress<int>? progress = null)
         {
 
             var tasks = new List<Task<PingReply>>();
@@ -83,11 +93,14 @@ namespace Nätverksövervakning
 
                     pingSuccesss.Add((ipResult, macResult, vendorResult, otherResult));
                 }
+
+                progress?.Report(i + 1); // Visa framgång i progress bar
             }
 
             return pingSuccesss;
         }
-
+        
+        private void Debug(string message) => System.Diagnostics.Debug.WriteLine(message);
 
     }
 }
