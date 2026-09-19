@@ -1,5 +1,4 @@
-﻿using System.Reactive.Subjects;
-using Microsoft.VisualBasic.Devices;
+﻿using System.Net.NetworkInformation;
 
 namespace Nätverksövervakning.UI
 {
@@ -9,76 +8,140 @@ namespace Nätverksövervakning.UI
         // ToolServices, ToolPing, ToolMAC, ToolVendor och ToolLatency
         Network network = new Network();
 
+        private List<(string IP, string MAC, string vendor, string other)> activeConn = new();
+
         public NetworkUI()
         {
             InitializeComponent();
 
             LabelResultIP.Text = "";
             LabelErrorIP.Text = "";
-            LabelLoad.Text = "";
-            ListConnections.Visible = false;
-            LoadProgress.Visible = false;
+            GroupLoading.Text = "";
+            GroupLoading.Visible = false;
+            GroupResult.Visible = false;
+            DataGrid.Columns.Add("IP", "IP-adress");
+            DataGrid.Columns.Add("MAC", "MAC-adress");
+            DataGrid.Columns.Add("Latency", "Latens");
+            DataGrid.Columns.Add("Vendor", "Tillverkare");
+            DataGrid.Columns.Add("Other", "Tjänster");
+
+        }
+
+        // Visa egen IP
+        private string ShowMyIP(string subnet)
+        {
+            string myIP = network.GetLocalIPAddress(subnet);
+            LabelResultIP.Text = $"Din IP-adress: {myIP}";
+            return myIP;
+        }
+
+        // Visa aktiva anslutningar i nätverket
+        private async Task<List<(string IP, string MAC, string vendor, string other)>> GetSubnetInfo(string myIP, string subnet)
+        {
+            GroupLoading.Text = $"Går igenom subnet {subnet}0-255...";
+
+            // Aktivera load bar
+            GroupLoading.Visible = true;
+            LoadProgress.Value = 0;
+            LoadProgress.Maximum = 254; // 0-255, men hoppar över 0 och 255
+            var progress = new Progress<int>(value => LoadProgress.Value = value);
+
+            // Hämta aktiva anslutningar
+            // Skickar med progress till ScanSubnetAsync för att uppdatera load bar därifrån
+            var activeConn = await network.ScanSubnetAsync(subnet, progress);
+
+            return activeConn;
+        }
+
+
+        private async Task<string> GetLatency(string IP)
+        {
+            var (latencyValue, status) = await network.GetLatency(IP);
+            if (status != IPStatus.Success) return "Misslyckades";
             
+            return $"{latencyValue} ms";
         }
 
         private async Task GenerateResultAsync(string subnet)
         {
 
-            //
+            var latency = new List<string>();
+
+
             // Visa egen IP
-            //
-
-            string myIP = network.GetLocalIPAddress(subnet);
-            LabelResultIP.Text = $"Din IP-adress: {myIP}";
+            string myIP = ShowMyIP(subnet);
 
 
-            //
-            // Visa aktiva anslutningar i nätverket
-            // 
+            // Lägg till subnet info
+            activeConn = await GetSubnetInfo(myIP, subnet);
 
-            LabelLoad.Text = $"Går igenom subnet {subnet}0-255...";
-
-            // Aktivera load bar
-            LoadProgress.Visible = true;
-            LoadProgress.Value = 0;
-            LoadProgress.Maximum = 254;
-            var progress = new Progress<int>(value => LoadProgress.Value = value);
-            
-            
-            List<(string IP, string MAC, string vendor, string other)> activeConn = await network.ScanSubnetAsync(subnet, progress);
-
-            ListConnections.Visible = true;
-
-            foreach (var (IP, MAC, vendor, other) in activeConn)
+            // Om inget hittades, visa felmeddelande
+            if (activeConn.Count == 0)
             {
-                
-                string myIPStr = "";
-                if (IP == myIP) myIPStr = " - Denna maskin";
-                string otherStr = string.IsNullOrEmpty(other) ? "" : $", {other}"; // Så det inte blir extra kolon
-                
-                ListConnections.Items.Add($"Hittade: {IP}, {MAC}, {vendor}{otherStr}{myIPStr}");
+                GroupLoading.Visible = false;
+                LabelErrorIP.Visible = true;
+                LabelErrorIP.Text = "Hittade inget på angivet subnet";
+                return;
             }
+
+
+            // Lägg till latens till aktiva anslutningar
+            for (var i = 0; i < activeConn.Count; i++)
+                latency.Add(await GetLatency(activeConn[i].IP));
+
+
+            // Lägger till all info till DataGrid
+            for (int i = 0; i < activeConn.Count; i++)
+            {
+                var (IP, MAC, vendor, services) = activeConn[i];
+                DataGrid.Rows.Add(new string[] { IP, MAC, latency[i], vendor, services });
+            }
+
+            // Starta timer för latens, så den uppdateras kontinuerligt
+            LatencyTimer.Start();
+
+            // Visa resultat
+            GroupLoading.Visible = false;
+            GroupResult.Visible = true;
+
+
         }
 
+        // Kör-knappen för att scanna subnet
         private async void ButtonIP_Click(object sender, EventArgs e)
         {
-            LabelErrorIP.Text = "";
+            ButtonIP.Enabled = false;
+            GroupResult.Visible = false;
+            LabelErrorIP.Visible = false;
 
-            if (LabelInputIP != null)
+            if (int.TryParse(LabelInputIP.Text, out int result))
             {
-                if (int.TryParse(LabelInputIP.Text, out int result))
+                if (result >= 0 && result <= 256)
                 {
-                    if (result >= 0 && result <= 256)
-                    {
-                        await GenerateResultAsync($"192.168.{LabelInputIP.Text}.");
-                        return;
-                    }
+                    await GenerateResultAsync($"192.168.{LabelInputIP.Text}.");
+                    ButtonIP.Enabled = true;
+                    return;
                 }
             }
 
             // Om input-fältet inte är giltig int mellan 0-256, visa felmeddelande
             LabelErrorIP.Text = "Ogiltigt nummer. Ange nummer mellan 0-256.";
-            if (LabelInputIP == null) LabelErrorIP.Text = "NULL";
+        }
+
+        // Timer som uppdaterar latens en gång i sekunden
+        private async void LatencyTimer_Tick(object sender, EventArgs e)
+        {
+            var latencyStr = new List<string>();
+
+            // Uppdaterar latens för alla aktiva anslutningar
+            for (int i = 0; i < activeConn.Count; i++)
+                latencyStr.Add(await GetLatency(activeConn[i].IP));
+
+            // Uppdaterar DataGrid med nya latensvärden
+            // Jag lade det i egen loop så alla uppdateras samtidigt i tabellen,
+            // annars skulle det uppdateras en i taget eftersom de blev klara efter await
+            for (int i = 0; i < activeConn.Count; i++)
+                DataGrid.Rows[i].Cells["Latency"].Value = latencyStr[i];
         }
     }
 }

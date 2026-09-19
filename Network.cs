@@ -72,12 +72,12 @@ namespace Nätverksövervakning
             List<string> getIPAddress = new List<string>();
 
 
-            // Hämta other info
-            List<(string IP, string name)> otherInfo = new List<(string IP, string name)>();
-            otherInfo = await GetServices();
+            // Hämta services
+            List<(string IP, string name)> servicesInfo = new List<(string IP, string name)>();
+            servicesInfo = await GetServices();
 
             // Går igenom resultaten och plockar ut de som svarade
-            var pingSuccesss = new List<(string IP, string MAC, string vendor, string other)>();
+            var pingSuccesss = new List<(string IP, string MAC, string vendor, string services)>();
             for (int i = 0; i < results.Length; i++)
             {
                 if (results[i].Status == IPStatus.Success)
@@ -89,9 +89,9 @@ namespace Nätverksövervakning
                     string ipResult = addresses[i];
                     string macResult = await GetMAC(ipResult);
                     string vendorResult = toolVendor.GetVendor(macResult);
-                    string otherResult = GetServiceAssign(otherInfo, ipResult);
+                    string servicesResult = GetServiceAssign(servicesInfo, ipResult);
 
-                    pingSuccesss.Add((ipResult, macResult, vendorResult, otherResult));
+                    pingSuccesss.Add((ipResult, macResult, vendorResult, servicesResult));
                 }
 
                 progress?.Report(i + 1); // Visa framgång i progress bar

@@ -29,6 +29,7 @@ namespace Nätverksövervakning.UI
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             LabelInputIP = new RichTextBox();
             labelTitle = new Label();
             ipLabel = new Label();
@@ -39,10 +40,15 @@ namespace Nätverksövervakning.UI
             ButtonIP = new Button();
             LabelErrorIP = new Label();
             panel1 = new Panel();
-            ListConnections = new ListBox();
             LoadProgress = new ProgressBar();
-            LabelLoad = new Label();
+            GroupResult = new GroupBox();
+            DataGrid = new DataGridView();
+            GroupLoading = new GroupBox();
+            LatencyTimer = new System.Windows.Forms.Timer(components);
             panel1.SuspendLayout();
+            GroupResult.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)DataGrid).BeginInit();
+            GroupLoading.SuspendLayout();
             SuspendLayout();
             // 
             // LabelInputIP
@@ -77,7 +83,7 @@ namespace Nätverksövervakning.UI
             // 
             LabelResultIP.AutoSize = true;
             LabelResultIP.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            LabelResultIP.Location = new Point(18, 248);
+            LabelResultIP.Location = new Point(426, 26);
             LabelResultIP.Name = "LabelResultIP";
             LabelResultIP.Size = new Size(226, 41);
             LabelResultIP.TabIndex = 3;
@@ -115,9 +121,9 @@ namespace Nätverksövervakning.UI
             // 
             // ButtonIP
             // 
-            ButtonIP.Location = new Point(448, 16);
+            ButtonIP.Location = new Point(459, 16);
             ButtonIP.Name = "ButtonIP";
-            ButtonIP.Size = new Size(132, 43);
+            ButtonIP.Size = new Size(408, 43);
             ButtonIP.TabIndex = 8;
             ButtonIP.Text = "Kör";
             ButtonIP.UseVisualStyleBackColor = true;
@@ -145,43 +151,68 @@ namespace Nätverksövervakning.UI
             panel1.Controls.Add(LabelInputIP);
             panel1.Location = new Point(18, 77);
             panel1.Name = "panel1";
-            panel1.Size = new Size(599, 150);
+            panel1.Size = new Size(885, 131);
             panel1.TabIndex = 10;
-            // 
-            // ListConnections
-            // 
-            ListConnections.FormattingEnabled = true;
-            ListConnections.Location = new Point(646, 77);
-            ListConnections.Name = "ListConnections";
-            ListConnections.Size = new Size(882, 574);
-            ListConnections.TabIndex = 11;
             // 
             // LoadProgress
             // 
-            LoadProgress.Location = new Point(12, 465);
+            LoadProgress.Location = new Point(19, 59);
             LoadProgress.Name = "LoadProgress";
-            LoadProgress.Size = new Size(587, 29);
+            LoadProgress.Size = new Size(849, 29);
             LoadProgress.Step = 1;
             LoadProgress.TabIndex = 12;
             // 
-            // LabelLoad
+            // GroupResult
             // 
-            LabelLoad.AutoSize = true;
-            LabelLoad.Font = new Font("Segoe UI", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            LabelLoad.Location = new Point(18, 338);
-            LabelLoad.Name = "LabelLoad";
-            LabelLoad.Size = new Size(157, 38);
-            LabelLoad.TabIndex = 13;
-            LabelLoad.Text = "Laddar-text";
+            GroupResult.Controls.Add(DataGrid);
+            GroupResult.FlatStyle = FlatStyle.System;
+            GroupResult.Font = new Font("Segoe UI", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            GroupResult.Location = new Point(0, 0);
+            GroupResult.Name = "GroupResult";
+            GroupResult.Size = new Size(1735, 778);
+            GroupResult.TabIndex = 15;
+            GroupResult.TabStop = false;
+            GroupResult.Text = "Resultat";
+            // 
+            // DataGrid
+            // 
+            DataGrid.AllowUserToAddRows = false;
+            DataGrid.AllowUserToDeleteRows = false;
+            DataGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            DataGrid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
+            DataGrid.BackgroundColor = SystemColors.HighlightText;
+            DataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            DataGrid.Location = new Point(12, 58);
+            DataGrid.Name = "DataGrid";
+            DataGrid.ReadOnly = true;
+            DataGrid.RowHeadersWidth = 51;
+            DataGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            DataGrid.Size = new Size(1701, 693);
+            DataGrid.TabIndex = 17;
+            // 
+            // GroupLoading
+            // 
+            GroupLoading.Controls.Add(GroupResult);
+            GroupLoading.Controls.Add(LoadProgress);
+            GroupLoading.Location = new Point(18, 221);
+            GroupLoading.Name = "GroupLoading";
+            GroupLoading.Size = new Size(885, 127);
+            GroupLoading.TabIndex = 16;
+            GroupLoading.TabStop = false;
+            GroupLoading.Text = "Laddar";
+            // 
+            // LatencyTimer
+            // 
+            LatencyTimer.Interval = 1000;
+            LatencyTimer.Tick += LatencyTimer_Tick;
             // 
             // NetworkUI
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1782, 745);
-            Controls.Add(LabelLoad);
-            Controls.Add(LoadProgress);
-            Controls.Add(ListConnections);
+            BackColor = SystemColors.Control;
+            ClientSize = new Size(1765, 1004);
+            Controls.Add(GroupLoading);
             Controls.Add(panel1);
             Controls.Add(LabelResultIP);
             Controls.Add(ipLabel);
@@ -191,6 +222,9 @@ namespace Nätverksövervakning.UI
             Text = "Nätverksövervakning";
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
+            GroupResult.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)DataGrid).EndInit();
+            GroupLoading.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -206,8 +240,11 @@ namespace Nätverksövervakning.UI
         private Button ButtonIP;
         private Label LabelErrorIP;
         private Panel panel1;
-        private ListBox ListConnections;
         private ProgressBar LoadProgress;
-        private Label LabelLoad;
+        private GroupBox GroupResult;
+        private GroupBox GroupLoading;
+        private RichTextBox richTextBox1;
+        private DataGridView DataGrid;
+        private System.Windows.Forms.Timer LatencyTimer;
     }
 }
