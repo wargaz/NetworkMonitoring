@@ -24,7 +24,5 @@ namespace Nätverksövervakning
             PingReply reply = await ping.SendPingAsync(IPAddress);
             return reply;
         }
-
-        private void Debug(string message) => System.Diagnostics.Debug.WriteLine(message);
     }
 }

@@ -2,6 +2,12 @@
 
 namespace Nätverksövervakning.UI
 {
+
+    // Huvudlogiken sker här.
+    // Flöde: Användaren klickar på "Kör": ButtonIP_Click() ->
+    // GenerateResultAsync() körs, som i sin tur anropar ShowMyIP(), GetSubnetInfo() och GetLatency(),
+    // sen anropas LatencyTimer_Tick() en gång i sekunden för att uppdatera latensvärdena
+
     public partial class NetworkUI : Form
     {
         // Skapa nätverksobjektet som samlar alla metoder från
@@ -14,11 +20,14 @@ namespace Nätverksövervakning.UI
         {
             InitializeComponent();
 
+            // Dölj UI-element vid start
             LabelResultIP.Text = "";
             LabelErrorIP.Text = "";
             GroupLoading.Text = "";
             GroupLoading.Visible = false;
             GroupResult.Visible = false;
+
+            // Etiketter till resultattabellen
             DataGrid.Columns.Add("IP", "IP-adress");
             DataGrid.Columns.Add("MAC", "MAC-adress");
             DataGrid.Columns.Add("Latency", "Latens");
@@ -27,7 +36,7 @@ namespace Nätverksövervakning.UI
 
         }
 
-        // Visa egen IP
+        // Visa och returnera egen IP
         private string ShowMyIP(string subnet)
         {
             string myIP = network.GetLocalIPAddress(subnet);
@@ -35,7 +44,7 @@ namespace Nätverksövervakning.UI
             return myIP;
         }
 
-        // Visa aktiva anslutningar i nätverket
+        // Hämta aktiva anslutningar i nätverket
         private async Task<List<(string IP, string MAC, string vendor, string other)>> GetSubnetInfo(string myIP, string subnet)
         {
             GroupLoading.Text = $"Går igenom subnet {subnet}0-255...";
@@ -53,15 +62,16 @@ namespace Nätverksövervakning.UI
             return activeConn;
         }
 
-
+        // Hämta latens för en IP-adress
         private async Task<string> GetLatency(string IP)
         {
             var (latencyValue, status) = await network.GetLatency(IP);
             if (status != IPStatus.Success) return "Misslyckades";
-            
+
             return $"{latencyValue} ms";
         }
 
+        // Generera resultatet och visa i DataGrid
         private async Task GenerateResultAsync(string subnet)
         {
 
@@ -94,7 +104,7 @@ namespace Nätverksövervakning.UI
             for (int i = 0; i < activeConn.Count; i++)
             {
                 var (IP, MAC, vendor, services) = activeConn[i];
-                DataGrid.Rows.Add(new string[] { IP, MAC, latency[i], vendor, services });
+                DataGrid.Rows.Add(new string[] { IP, FormatMAC(MAC), latency[i], vendor, services });
             }
 
             // Starta timer för latens, så den uppdateras kontinuerligt
@@ -104,15 +114,21 @@ namespace Nätverksövervakning.UI
             GroupLoading.Visible = false;
             GroupResult.Visible = true;
 
-
         }
 
         // Kör-knappen för att scanna subnet
         private async void ButtonIP_Click(object sender, EventArgs e)
         {
+
+            // Inaktivera knappen och dölj felmeddelande och resultat
             ButtonIP.Enabled = false;
             GroupResult.Visible = false;
             LabelErrorIP.Visible = false;
+
+            LatencyTimer.Stop();
+
+            // Rensa listan
+            DataGrid.Rows.Clear();
 
             if (int.TryParse(LabelInputIP.Text, out int result))
             {
@@ -131,17 +147,32 @@ namespace Nätverksövervakning.UI
         // Timer som uppdaterar latens en gång i sekunden
         private async void LatencyTimer_Tick(object sender, EventArgs e)
         {
+            var conn = activeConn;
             var latencyStr = new List<string>();
 
             // Uppdaterar latens för alla aktiva anslutningar
-            for (int i = 0; i < activeConn.Count; i++)
-                latencyStr.Add(await GetLatency(activeConn[i].IP));
+            for (int i = 0; i < conn.Count; i++)
+                latencyStr.Add(await GetLatency(conn[i].IP));
+
+            // Förhindrar out of range vid omkörning av applikationen
+            if (conn != activeConn || DataGrid.Rows.Count < conn.Count)
+                return;
 
             // Uppdaterar DataGrid med nya latensvärden
             // Jag lade det i egen loop så alla uppdateras samtidigt i tabellen,
             // annars skulle det uppdateras en i taget eftersom de blev klara efter await
-            for (int i = 0; i < activeConn.Count; i++)
+            for (int i = 0; i < conn.Count; i++)
                 DataGrid.Rows[i].Cells["Latency"].Value = latencyStr[i];
+        }
+
+        // Formaterar MAC-adress till standardformat
+        private string FormatMAC(string mac)
+        {
+            if (string.IsNullOrEmpty(mac)) return "Ingen MAC-adress hittades";
+            string result = mac;
+            for (int i = 2; i < result.Length; i += 3)
+                    result = result.Insert(i, ":");
+            return result.ToUpper();
         }
     }
 }

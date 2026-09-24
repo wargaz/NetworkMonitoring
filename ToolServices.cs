@@ -10,7 +10,7 @@ namespace Nätverksövervakning
         public async Task<List<(string IP, string name)>> GetServices()
         {
             var results = await ZeroconfResolver.ResolveAsync("_http._tcp.local.", TimeSpan.FromSeconds(3));
-            List<(string IP, string name)> serviceList = new List<(string IP, string name)>();
+            var serviceList = new List<(string IP, string name)>();
 
             ILookup<string, string> domains = await ZeroconfResolver.BrowseDomainsAsync(TimeSpan.FromSeconds(3));
 
@@ -32,7 +32,7 @@ namespace Nätverksövervakning
             for (int i = 0; i < other.Count; i++)
             {
                 if (ip == other[i].IP)
-                    return other[i].name;
+                    return $"{other[i].name}";
             }
             return "";
         }

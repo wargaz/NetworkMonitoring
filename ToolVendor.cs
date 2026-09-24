@@ -32,7 +32,9 @@ namespace Nätverksövervakning
             PhysicalAddress mac = PhysicalAddress.Parse(macAddress);
             var vendorInfo = addressMatcher.FindInfo(mac);
 
-            return vendorInfo?.Organization ?? "Okänd tillverkare";
+            if (vendorInfo == null || vendorInfo.Organization == null)
+                return "Okänd tillverkare";
+            return vendorInfo.Organization;
         }
     }
 }

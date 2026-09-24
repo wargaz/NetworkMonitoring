@@ -6,7 +6,12 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>network_icon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="network_icon.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ArpLookup" Version="2.1.88" />

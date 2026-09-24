@@ -42,6 +42,7 @@ namespace Nätverksövervakning.UI
             panel1 = new Panel();
             LoadProgress = new ProgressBar();
             GroupResult = new GroupBox();
+            label4 = new Label();
             DataGrid = new DataGridView();
             GroupLoading = new GroupBox();
             LatencyTimer = new System.Windows.Forms.Timer(components);
@@ -158,7 +159,7 @@ namespace Nätverksövervakning.UI
             // 
             LoadProgress.Location = new Point(19, 59);
             LoadProgress.Name = "LoadProgress";
-            LoadProgress.Size = new Size(849, 29);
+            LoadProgress.Size = new Size(786, 29);
             LoadProgress.Step = 1;
             LoadProgress.TabIndex = 12;
             // 
@@ -167,12 +168,22 @@ namespace Nätverksövervakning.UI
             GroupResult.Controls.Add(DataGrid);
             GroupResult.FlatStyle = FlatStyle.System;
             GroupResult.Font = new Font("Segoe UI", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            GroupResult.Location = new Point(0, 0);
+            GroupResult.Location = new Point(12, 225);
             GroupResult.Name = "GroupResult";
-            GroupResult.Size = new Size(1735, 778);
+            GroupResult.Size = new Size(1741, 767);
             GroupResult.TabIndex = 15;
             GroupResult.TabStop = false;
             GroupResult.Text = "Resultat";
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(1596, 9);
+            label4.Name = "label4";
+            label4.Size = new Size(157, 31);
+            label4.TabIndex = 18;
+            label4.Text = "John Axelsson";
+            label4.TextAlign = ContentAlignment.TopRight;
             // 
             // DataGrid
             // 
@@ -187,16 +198,15 @@ namespace Nätverksövervakning.UI
             DataGrid.ReadOnly = true;
             DataGrid.RowHeadersWidth = 51;
             DataGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            DataGrid.Size = new Size(1701, 693);
+            DataGrid.Size = new Size(1706, 684);
             DataGrid.TabIndex = 17;
             // 
             // GroupLoading
             // 
-            GroupLoading.Controls.Add(GroupResult);
             GroupLoading.Controls.Add(LoadProgress);
-            GroupLoading.Location = new Point(18, 221);
+            GroupLoading.Location = new Point(914, 81);
             GroupLoading.Name = "GroupLoading";
-            GroupLoading.Size = new Size(885, 127);
+            GroupLoading.Size = new Size(811, 127);
             GroupLoading.TabIndex = 16;
             GroupLoading.TabStop = false;
             GroupLoading.Text = "Laddar";
@@ -212,6 +222,8 @@ namespace Nätverksövervakning.UI
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Control;
             ClientSize = new Size(1765, 1004);
+            Controls.Add(label4);
+            Controls.Add(GroupResult);
             Controls.Add(GroupLoading);
             Controls.Add(panel1);
             Controls.Add(LabelResultIP);
@@ -246,5 +258,6 @@ namespace Nätverksövervakning.UI
         private RichTextBox richTextBox1;
         private DataGridView DataGrid;
         private System.Windows.Forms.Timer LatencyTimer;
+        private Label label4;
     }
 }

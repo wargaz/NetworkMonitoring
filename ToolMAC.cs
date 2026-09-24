@@ -10,7 +10,7 @@ namespace Nätverksövervakning
         public async Task<string> GetMAC(string IPAdress)
         {
             PhysicalAddress? mac = await Arp.LookupAsync(IPAddress.Parse(IPAdress));
-            return (mac == null || mac.ToString() == "") ? "Ingen MAC-adress hittades" : mac.ToString();
+            return mac == null ? "" : mac.ToString();
         }
     }
 }

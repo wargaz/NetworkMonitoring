@@ -19,6 +19,7 @@ namespace Nätverksövervakning
         // Pingar given IP-adress och returnerar PingReply
         public async Task<PingReply> PingAsync(string IPAddress) => await toolPing.PingAsync(IPAddress);
 
+
         // Hämtar MAC-adress för en given IP-adress
         public async Task<string> GetMAC(string IPAdress)
         {
@@ -41,7 +42,7 @@ namespace Nätverksövervakning
         public async Task<List<(string IP, string name)>> GetServices() => await toolServices.GetServices();
 
 
-        // Matchar IP-adress med DNS-poster från GetOther()
+        // Matchar IP-adress med DNS-poster från GetServices
         public string GetServiceAssign(List<(string IP, string name)> other, string ip) => toolServices.GetServiceAssign(other, ip);
 
 
@@ -73,7 +74,7 @@ namespace Nätverksövervakning
 
 
             // Hämta services
-            List<(string IP, string name)> servicesInfo = new List<(string IP, string name)>();
+            var servicesInfo = new List<(string IP, string name)>();
             servicesInfo = await GetServices();
 
             // Går igenom resultaten och plockar ut de som svarade
@@ -99,8 +100,5 @@ namespace Nätverksövervakning
 
             return pingSuccesss;
         }
-        
-        private void Debug(string message) => System.Diagnostics.Debug.WriteLine(message);
-
     }
 }
