@@ -20,9 +20,14 @@ namespace Nätverksövervakning
         // Pingar given IP-adress och returnerar PingReply
         public async Task<PingReply> PingAsync(string IPAddress)
         {
-            var ping = new Ping();
-            PingReply reply = await ping.SendPingAsync(IPAddress);
-            return reply;
-        }
+            try
+            {
+                var ping = new Ping();
+                PingReply reply = await ping.SendPingAsync(IPAddress);
+                return reply;
+            } catch (PingException)
+            {
+                return null;
+            }
     }
 }
