@@ -25,9 +25,11 @@ namespace Nätverksövervakning
                 var ping = new Ping();
                 PingReply reply = await ping.SendPingAsync(IPAddress);
                 return reply;
-            } catch (PingException)
+            }
+            catch (PingException)
             {
                 return null;
             }
+        }
     }
 }

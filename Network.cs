@@ -81,7 +81,7 @@ namespace Nätverksövervakning
             var pingSuccesss = new List<(string IP, string MAC, string vendor, string services)>();
             for (int i = 0; i < results.Length; i++)
             {
-                if (results[i].Status == IPStatus.Success)
+                if (results[i]?.Status == IPStatus.Success)
                 {
 
                     // IP-adressen som svarade
